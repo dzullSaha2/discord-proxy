@@ -6,48 +6,52 @@ import FormData from "form-data";
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-const DISCORD_WEBHOOK =
-  "https://discord.com/api/webhooks/1453761020895170592/rEkqBJ_c8yHZj3dcR_02GJXZwrlHWkgLyccy1JFXZTLi2PZoqCJRto9TcI5C29nQ2h_j"; // ganti webhook kamu
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1453761020895170592/rEkqBJ_c8yHZj3dcR_02GJXZwrlHWkgLyccy1JFXZTLi2PZoqCJRto9TcI5C29nQ2h_j"; // ganti webhook kamu
 
 app.post("/send", upload.single("image"), async (req, res) => {
   try {
     const { user, mechanic, desc, denda, total, items } = req.body;
+    const parsedItems = items ? JSON.parse(items) : [];
 
+    // ================== EMBED ==================
     const embed = {
       title: "🚗 Elite Custom Garage",
       color: 5793266,
       fields: [
         { name: "👤 Customer", value: user || "-", inline: true },
         { name: "🔧 Mekanik", value: mechanic || "-", inline: true },
-        { name: "📦 Deskripsi", value: "```" + (desc || "-") + "```" },
-        {
-          name: "🧾 Item",
-          value: items ? "```" + JSON.parse(items).join("\n") + "```" : "-"
-        },
-        { name: "⚠️ Denda", value: "$ " + (denda || 0), inline: true },
-        { name: "💰 Total", value: "$ " + (total || 0), inline: true }
+        { name: "📦 Order", value: "```" + (desc || "-") + "```", inline: false },
+        { name: "🧾 Item", value: parsedItems.length ? "```" + parsedItems.join("\n") + "```" : "-", inline: false },
+        { name: "⚠️ Denda", value: "$ " + (denda || "0"), inline: true },
+        { name: "💰 Total Akhir", value: "$ " + (total || "0"), inline: true }
       ],
+      footer: { text: "Order Confirmation • Elite Custom Garage" },
       timestamp: new Date().toISOString()
     };
 
+    // ================== FORM DATA ==================
     const form = new FormData();
     form.append(
       "payload_json",
       JSON.stringify({ username: "Elite Custom Garage", embeds: [embed] })
     );
 
+    // ================== IMAGE ==================
     if (req.file) {
       embed.image = { url: "attachment://order.png" };
-      form.append("file", req.file.buffer, "order.png");
+      form.append("file", req.file.buffer, { filename: "order.png", contentType: req.file.mimetype });
     }
 
+    // ================== SEND TO DISCORD ==================
     const r = await fetch(DISCORD_WEBHOOK, { method: "POST", body: form });
-    if (!r.ok) throw new Error("Discord error");
+    if (!r.ok) throw new Error(`Discord error ${r.status}`);
 
     res.json({ status: "ok" });
   } catch (e) {
+    console.error("SEND ERROR:", e);
     res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log("Proxy running"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
