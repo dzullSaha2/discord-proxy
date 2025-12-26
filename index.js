@@ -7,7 +7,7 @@ import cors from "cors";
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// IZINKAN SEMUA ORIGIN (atau bisa diganti spesifik domain kamu)
+// IZINKAN SEMUA ORIGIN
 app.use(cors());
 
 // ================= WEBHOOK =================
@@ -18,6 +18,7 @@ app.post("/send", upload.single("image"), async (req, res) => {
     const { user, mechanic, desc, denda, total, items } = req.body;
     const parsedItems = items ? JSON.parse(items) : [];
 
+    // ================== EMBED ==================
     const embed = {
       title: "🚗 Elite Custom Garage",
       color: 5793266,
@@ -33,14 +34,22 @@ app.post("/send", upload.single("image"), async (req, res) => {
       timestamp: new Date().toISOString()
     };
 
+    // ================== FORM DATA ==================
     const form = new FormData();
+
+    // Jika ada file, masukkan image ke embed
+    if (req.file) {
+      embed.image = { url: "attachment://order.png" }; // ini membuat gambar tampil di embed
+    }
+
     form.append("payload_json", JSON.stringify({ username: "Elite Custom Garage", embeds: [embed] }));
 
+    // Append file setelah embed.image ditambahkan
     if (req.file) {
-      embed.image = { url: "attachment://order.png" };
       form.append("file", req.file.buffer, { filename: "order.png", contentType: req.file.mimetype });
     }
 
+    // ================== KIRIM KE DISCORD ==================
     const r = await fetch(DISCORD_WEBHOOK, { method: "POST", body: form });
     if (!r.ok) throw new Error(`Discord error ${r.status}`);
 
