@@ -31,16 +31,15 @@ app.post("/send", upload.single("image"), async (req, res) => {
 
     // ================== FORM DATA ==================
     const form = new FormData();
-    form.append(
-      "payload_json",
-      JSON.stringify({ username: "Elite Custom Garage", embeds: [embed] })
-    );
 
-    // ================== IMAGE ==================
+    // Jika ada gambar, masukkan dulu ke embed dan attach
     if (req.file) {
-      embed.image = { url: "attachment://order.png" };
+      embed.image = { url: "attachment://order.png" }; // image dalam embed
       form.append("file", req.file.buffer, { filename: "order.png", contentType: req.file.mimetype });
     }
+
+    // Tambahkan embed ke payload
+    form.append("payload_json", JSON.stringify({ username: "Elite Custom Garage", embeds: [embed] }));
 
     // ================== SEND TO DISCORD ==================
     const r = await fetch(DISCORD_WEBHOOK, { method: "POST", body: form });
