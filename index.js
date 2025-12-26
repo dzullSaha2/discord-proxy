@@ -25,8 +25,8 @@ app.post("/send", upload.single("image"), async (req, res) => {
       fields: [
         { name: "👤 Customer", value: user || "-", inline: true },
         { name: "🔧 Mekanik", value: mechanic || "-", inline: true },
-        { name: "📦 Order", value: "```" + (desc || "-") + "```", inline: false },
-        { name: "🧾 Item", value: parsedItems.length ? "```" + parsedItems.join("\n") + "```" : "-", inline: false },
+        { name: "🧾 Note", value: "```" + (desc || "-") + "```", inline: false },
+        { name: "📦 Item", value: parsedItems.length ? "```" + parsedItems.join("\n") + "```" : "-", inline: false },
         { name: "⚠️ Denda", value: "$ " + (denda || "0"), inline: true },
         { name: "💰 Total Akhir", value: "$ " + (total || "0"), inline: true }
       ],
