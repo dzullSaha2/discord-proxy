@@ -6,53 +6,59 @@ import FormData from "form-data";
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ================== CONFIG ==================
 const DISCORD_WEBHOOK =
-  "https://discord.com/api/webhooks/1453761020895170592/rEkqBJ_c8yHZj3dcR_02GJXZwrlHWkgLyccy1JFXZTLi2PZoqCJRto9TcI5C29nQ2h_j"; // GANTI WEBHOOK
+  "https://discord.com/api/webhooks/1453761020895170592/rEkqBJ_c8yHZj3dcR_02GJXZwrlHWkgLyccy1JFXZTLi2PZoqCJRto9TcI5C29nQ2h_j"; // GANTI
 
-// ================== POST /send ==================
 app.post("/send", upload.single("image"), async (req, res) => {
   try {
-    const { user = "-", mechanic = "-", desc = "-", denda = "0", total = "0", items = "[]" } = req.body;
-    let itemsArr = [];
-    try { itemsArr = JSON.parse(items); } catch(e){}
+    const { user, mechanic, desc, denda, total, items } = req.body;
 
-    // ================== FORMAT EMBED ==================
+    // ================= EMBED =================
     const embed = {
       title: "🚗 Elite Custom Garage",
-      color: 5793266,
+      description: desc ? "```" + desc + "```" : "-",
+      color: 0x2ecc71, // Hijau
       fields: [
-        { name: "👤 Customer", value: user, inline: true },
-        { name: "🔧 Mekanik", value: mechanic, inline: true },
-        { name: "📦 Deskripsi", value: "```" + desc + "```" },
-        { name: "🧾 Item", value: itemsArr.length ? "```" + itemsArr.join("\n") + "```" : "-", inline: false },
-        { name: "⚠️ Denda", value: "$ " + denda, inline: true },
-        { name: "💰 Total Akhir", value: "$ " + total, inline: true }
+        { name: "👤 Customer", value: user || "-", inline: true },
+        { name: "🔧 Mekanik", value: mechanic || "-", inline: true },
+        { name: "🧾 Item", 
+          value: items ? "```" + JSON.parse(items).join("\n") + "```" : "-", 
+          inline: false 
+        },
+        { name: "⚠️ Denda", value: "$ " + (denda || 0), inline: true },
+        { name: "💰 Total Akhir", value: "$ " + (total || 0), inline: true }
       ],
-      footer: { text: "Order Confirmation • Elite Custom Garage" },
+      footer: {
+        text: "Order Confirmation • Elite Custom Garage"
+      },
       timestamp: new Date().toISOString()
     };
 
-    // ================== FORM DATA ==================
     const form = new FormData();
-    form.append("payload_json", JSON.stringify({ username: "Elite Custom Garage", embeds: [embed] }));
+    form.append(
+      "payload_json",
+      JSON.stringify({ username: "Elite Custom Garage", embeds: [embed] })
+    );
 
+    // ================= IMAGE =================
     if (req.file) {
       embed.image = { url: "attachment://order.png" };
-      form.append("file", req.file.buffer, { filename: "order.png", contentType: req.file.mimetype });
+      form.append("file", req.file.buffer, {
+        filename: "order.png",
+        contentType: req.file.mimetype
+      });
     }
 
-    // ================== SEND TO DISCORD ==================
-    const discordRes = await fetch(DISCORD_WEBHOOK, { method: "POST", body: form });
-    if (!discordRes.ok) throw new Error(`Discord error ${discordRes.status}`);
+    // ================= SEND TO DISCORD =================
+    const r = await fetch(DISCORD_WEBHOOK, { method: "POST", body: form });
+    if (!r.ok) throw new Error("Discord error: " + r.status);
 
     res.json({ status: "ok" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: "error", error: err.message });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ status: "error", error: e.message });
   }
 });
 
-// ================== START SERVER ==================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Proxy running on port ${PORT}`));
+app.listen(PORT, () => console.log("Proxy running on port", PORT));
